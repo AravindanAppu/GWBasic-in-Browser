@@ -31,14 +31,14 @@
     background:#444;
     color:white;
     font-size:1em;
-    padding:10px;
+    padding: 16px 10px;
     border-radius:6px;
     cursor:pointer;
     user-select:none;
     text-align:center;
     flex: 1 1 auto; 
     min-width: 28px;
-    max-width: 1fr;
+    min-height: 48px;
   }
   .key:hover { background:#666; }
   .key:active { background:#888; transform:translateY(1px); }
@@ -68,9 +68,9 @@
   /* On small screens */
 @media (max-width: 600px) {
   .key {
-    font-size: 0.8em;
-    padding: 8px 6px;
-    min-width: 22px;
+    font-size: 0.9em;
+    padding: 14px 8px;
+    min-height: 44px;
   }
   .key-row {
     gap: 2px;
@@ -79,9 +79,9 @@
 /* On very small screens */
 @media (max-width: 400px) {
   .key {
-    font-size: 0.7em;
-    padding: 6px 4px;
-    min-width: 18px;
+    font-size: 0.8em;
+    padding: 12px 6px;
+    min-height: 40px;
   }
 } 
 </style>
