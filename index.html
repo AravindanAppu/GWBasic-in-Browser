@@ -15,9 +15,9 @@
     width:100%;
     background:#222;
     display:flex;
-    flex-direction:column;
+    flex-direction:stretch;
     align-items:center;
-    padding:4px 0;
+    padding:4px;
     box-sizing:border-box;
   }
   .key-row {
@@ -36,12 +36,13 @@
     cursor:pointer;
     user-select:none;
     text-align:center;
-    flex:1 0 auto;
-    min-width:30px;
+    flex: 1 1 auto; 
+    min-width: 28px;
+    max-width: 1fr;
   }
   .key:hover { background:#666; }
   .key:active { background:#888; transform:translateY(1px); }
-  .key.wide { flex:2 0 auto; }
+  .key.wide { flex:2 1 auto; }
   .key.special { background:#5a3c1c; }
   .key.shift-active { background:#c96 !important; }
   #downloadBtn {
@@ -64,7 +65,25 @@
     background:#218838;
     transform: translateY(-1px);
   }
-  @media(max-width:600px){ .key{font-size:0.9em; padding:8px;} }
+  /* On small screens */
+@media (max-width: 600px) {
+  .key {
+    font-size: 0.8em;
+    padding: 8px 6px;
+    min-width: 22px;
+  }
+  .key-row {
+    gap: 2px;
+  }
+}
+/* On very small screens */
+@media (max-width: 400px) {
+  .key {
+    font-size: 0.7em;
+    padding: 6px 4px;
+    min-width: 18px;
+  }
+} 
 </style>
 </head>
 <body>
@@ -236,7 +255,12 @@ keyboard.addEventListener("click", event => {
   if (keyCode === 16) handleShiftUI(keyElem);
   else handleKey(keyCode);
 });
-
+keyboard.addEventListener("touchstart", event => {
+  const keyElem = event.target.closest(".key");
+  if (!keyElem) return;
+  keyElem.click();
+}, { passive: true });
+  
 function updateShiftKey(keyElem) {
   if (shiftLocked || shiftActive) keyElem.classList.add("shift-active");
   else keyElem.classList.remove("shift-active");
