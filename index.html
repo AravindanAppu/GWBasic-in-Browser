@@ -255,11 +255,6 @@ keyboard.addEventListener("click", event => {
   if (keyCode === 16) handleShiftUI(keyElem);
   else handleKey(keyCode);
 });
-keyboard.addEventListener("touchstart", event => {
-  const keyElem = event.target.closest(".key");
-  if (!keyElem) return;
-  keyElem.click();
-}, { passive: true });
   
 function updateShiftKey(keyElem) {
   if (shiftLocked || shiftActive) keyElem.classList.add("shift-active");
