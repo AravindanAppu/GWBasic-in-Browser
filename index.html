@@ -73,6 +73,7 @@
 <button id="downloadBtn" disabled>Download</button>
 
 <div id="keyboard-container">
+  <!-- Function keys -->
   <div class="key-row">
     <div class="key" data-key="112">F1</div>
     <div class="key" data-key="113">F2</div>
@@ -97,6 +98,7 @@
     <div class="key" data-key="56">8</div>
     <div class="key" data-key="57">9</div>
     <div class="key" data-key="48">0</div>
+    <div class="key wide special" data-key="8">⌫</div>
   </div>
   <!-- QWERTY row -->
   <div class="key-row">
@@ -113,7 +115,7 @@
   </div>
   <!-- Home row -->
   <div class="key-row">
-    <div class="key wide" data-key="65">A</div>
+    <div class="key" data-key="65">A</div>
     <div class="key" data-key="83">S</div>
     <div class="key" data-key="68">D</div>
     <div class="key" data-key="70">F</div>
@@ -122,6 +124,8 @@
     <div class="key" data-key="74">J</div>
     <div class="key" data-key="75">K</div>
     <div class="key" data-key="76">L</div>
+    <div class="key" data-key="186">;</div>
+    <div class="key" data-key="222">'</div>
     <div class="key wide special" data-key="13">⏎</div>
   </div>
   <!-- Bottom row -->
@@ -134,15 +138,13 @@
     <div class="key" data-key="66">B</div>
     <div class="key" data-key="78">N</div>
     <div class="key" data-key="77">M</div>
-    <div class="key wide special" data-key="8">⌫</div>
+    <div class="key" data-key="188">,</div>
+    <div class="key" data-key="190">.</div>
+    <div class="key" data-key="191">/</div>
   </div>
   <!-- Symbol & space row -->
   <div class="key-row">
-    <div class="key" data-key="190">.</div>
-    <div class="key" data-key="188">,</div>
     <div class="key wide" data-key="32">Space</div>
-    <div class="key" data-key="186">;</div>
-    <div class="key" data-key="222">"</div>
   </div>
 </div>
 
@@ -157,14 +159,13 @@ const dos = Dos(document.getElementById("dos-root"), {
   onEvent: async (event, ci) => {
     if (event !== "ci-ready") return;
     console.log("DOS is ready");
-    
     try {
         await ci.fsWriteFile("output1.txt", new TextEncoder().encode(""));
         startMonitoring(ci);
     } catch (err) {
         console.error("Error in setup:", err);
     }
-},
+  },
 });
 
 async function startMonitoring(ci) {
@@ -173,27 +174,20 @@ async function startMonitoring(ci) {
 
     async function checkOutput() {
         if (!monitoring) return;
-
         try {
             const data = await ci.fsReadFile("output1.txt");
-            
             if (data && data.length > lastSize) {
-                console.log("New content detected, size:", data.length);
                 lastSize = data.length;
                 enableDownload(data);
             }
         } catch (err) {
             console.log("Checking for output...");
         }
-
         setTimeout(() => checkOutput(), 1000);
     }
 
     checkOutput();
-
-    return () => {
-        monitoring = false;
-    };
+    return () => { monitoring = false; };
 }
 
 function enableDownload(data) {
@@ -202,20 +196,15 @@ function enableDownload(data) {
     downloadBtn.disabled = true;
     return;
   }
-  
   downloadBtn.disabled = false;
   downloadBtn.onclick = () => {
-    // Convert the data to string and normalize line endings
     const content = new TextDecoder().decode(data)
-      .replace(/\r\n/g, '\n')  // Convert CRLF to LF
-      .replace(/\r/g, '\n')    // Convert CR to LF
-      .split('\n')             // Split into lines
-      .map(line => line.trimEnd())  // Remove trailing spaces
-      .join('\n');             // Rejoin with consistent line endings
-
-    const blob = new Blob([content], { 
-      type: "text/plain;charset=utf-8" 
-    });
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .split('\n')
+      .map(line => line.trimEnd())
+      .join('\n');
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -227,76 +216,108 @@ function enableDownload(data) {
   };
 }
 
+// --- Virtual Keyboard ---
 let shiftActive = false;
 let shiftLocked = false;
 let lastShiftTap = 0;
 const DOUBLE_TAP_THRESHOLD = 300;
 
+function getDosCanvas() {
+  return document.querySelector("#dos-root canvas");
+}
+
 const keyboard = document.getElementById("keyboard-container");
 keyboard.addEventListener("click", event => {
   const keyElem = event.target.closest(".key");
   if (!keyElem) return;
-  const keyCode = parseInt(keyElem.getAttribute("data-key"));
+  const keyCode = parseInt(keyElem.dataset.key);
   if (isNaN(keyCode)) return;
 
-  if (keyCode === 16) {
-    handleShift(keyElem);
-  } else {
-    handleKey(keyCode);
-  }
+  if (keyCode === 16) handleShiftUI(keyElem);
+  else handleKey(keyCode);
 });
 
-function handleShift(keyElem) {
-  const now = Date.now();
-  if (now - lastShiftTap < DOUBLE_TAP_THRESHOLD) {
-    shiftLocked = !shiftLocked;
-    shiftActive = shiftLocked;
-  } else {
-    shiftActive = true;
-  }
-  lastShiftTap = now;
-  updateShiftKey(keyElem);
-  vibrate();
-}
-
 function updateShiftKey(keyElem) {
-  if (shiftLocked || shiftActive) {
-    keyElem.classList.add("shift-active");
-  } else {
-    keyElem.classList.remove("shift-active");
-  }
+  if (shiftLocked || shiftActive) keyElem.classList.add("shift-active");
+  else keyElem.classList.remove("shift-active");
 }
 
 function handleKey(keyCode) {
+  const canvas = getDosCanvas();
+  if (!canvas) return;
   const shiftElem = document.querySelector(".key[data-key='16']");
-  sendKey(keyCode);
-  vibrate();
-  if (!shiftLocked && shiftActive) {
+
+  if (shiftActive && !shiftLocked) {
+    sendKey(canvas, 16); // press Shift
+    sendKey(canvas, keyCode);
+    releaseKey(canvas, keyCode);
+    releaseKey(canvas, 16); // release Shift
     shiftActive = false;
     updateShiftKey(shiftElem);
+  } else {
+    sendKey(canvas, keyCode);
+    releaseKey(canvas, keyCode);
   }
+  updateKeyboardUI();
 }
 
-function sendKey(keyCode) {
-  simulateKeyEvent(keyCode, true);
-  simulateKeyEvent(keyCode, false);
+function sendKey(canvas, keyCode) {
+  canvas.dispatchEvent(new KeyboardEvent("keydown", { keyCode, which: keyCode, bubbles: true }));
 }
 
-function simulateKeyEvent(keyCode, pressed) {
-  const eventType = pressed ? "keydown" : "keyup";
-  const event = new KeyboardEvent(eventType, {
-    keyCode: keyCode,
-    which: keyCode,
-    bubbles: true,
-    cancelable: true
+function releaseKey(canvas, keyCode) {
+  canvas.dispatchEvent(new KeyboardEvent("keyup", { keyCode, which: keyCode, bubbles: true }));
+}
+
+const functionalKeys = [8, 13, 16];
+
+const shiftMapUI = {
+  "49":"!", "50":"@", "51":"#", "52":"$", "53":"%", "54":"^", "55":"&", "56":"*", "57":"(", "48":")",
+  "186":":","222":'"',"188":"<","190":">","191":"?"
+};
+
+const normalMapUI = {
+  "49":"1","50":"2","51":"3","52":"4","53":"5","54":"6","55":"7","56":"8","57":"9","48":"0",
+  "186":";","222":"'","188":",","190":".","191":"/"
+};
+
+function updateKeyboardUI() {
+  const keys = document.querySelectorAll("#keyboard-container .key");
+  keys.forEach(k => {
+    const code = k.dataset.key;
+    if (!code) return;
+
+    // Skip functional keys
+    if (["8", "13", "16"].includes(code)) return;
+
+    // Letters (A-Z)
+    if (code >= "65" && code <= "90") {
+      k.textContent = (shiftActive || shiftLocked) 
+        ? String.fromCharCode(parseInt(code))    // Uppercase
+        : String.fromCharCode(parseInt(code) + 32); // Lowercase
+    }
+    // Numbers & symbols
+    else if (normalMapUI[code]) {
+      k.textContent = (shiftActive || shiftLocked) ? shiftMapUI[code] : normalMapUI[code];
+    }
   });
-  document.dispatchEvent(event);
 }
 
-function vibrate() {
-  if (navigator.vibrate) navigator.vibrate(20);
+function handleShiftUI(keyElem) {
+  const now = Date.now();
+  if (now - lastShiftTap < DOUBLE_TAP_THRESHOLD) {
+    shiftLocked = !shiftLocked;    // toggle lock
+    shiftActive = shiftLocked;     // active follows lock
+  } else {
+    // Single tap toggles shift only if not locked
+    if (!shiftLocked) shiftActive = !shiftActive;
+  }
+  lastShiftTap = now;
+
+  updateShiftKey(keyElem); // highlight Shift key
+  updateKeyboardUI();      // update letter/symbol UI
 }
+updateKeyboardUI();
 </script>
-
 </body>
 </html>
