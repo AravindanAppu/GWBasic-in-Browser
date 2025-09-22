@@ -267,18 +267,28 @@ function handleKey(keyCode) {
   const shiftElem = document.querySelector(".key[data-key='16']");
 
   if (shiftActive && !shiftLocked) {
-    sendKey(canvas, 16); // press Shift
+    // Temporary shift (one key only)
+    sendKey(canvas, 16);
     sendKey(canvas, keyCode);
     releaseKey(canvas, keyCode);
-    releaseKey(canvas, 16); // release Shift
-    shiftActive = false;
+    releaseKey(canvas, 16);
+    shiftActive = false; // reset after one key
     updateShiftKey(shiftElem);
+  } else if (shiftLocked) {
+    // Shift lock: always hold shift for all keys
+    sendKey(canvas, 16);
+    sendKey(canvas, keyCode);
+    releaseKey(canvas, keyCode);
+    releaseKey(canvas, 16);
   } else {
+    // Normal typing
     sendKey(canvas, keyCode);
     releaseKey(canvas, keyCode);
   }
+
   updateKeyboardUI();
 }
+
 
 function sendKey(canvas, keyCode) {
   canvas.dispatchEvent(new KeyboardEvent("keydown", { keyCode, which: keyCode, bubbles: true }));
