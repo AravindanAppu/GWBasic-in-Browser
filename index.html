@@ -175,7 +175,7 @@ const dos = Dos(document.getElementById("dos-root"), {
   autoStart: true,
   autoSave: false,
   kiosk: true,
-  pathPrefix: "/emulators/",
+  pathPrefix: "./emulators/",
   onEvent: async (event, ci) => {
     if (event !== "ci-ready") return;
     console.log("DOS is ready");
